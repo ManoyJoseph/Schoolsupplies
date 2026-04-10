@@ -1,6 +1,7 @@
 import { createClient } from "./client";
 import { Product, Category, Order, OrderItem } from "../types/database";
 
+// Database functions for School Supplies app
 // ===== CATEGORIES =====
 export async function getCategories() {
   const supabase = createClient();
