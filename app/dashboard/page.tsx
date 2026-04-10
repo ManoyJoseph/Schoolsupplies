@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { signOut } from "@/lib/supabase/auth";
+import Link from "next/link";
 import { useEffect } from "react";
 
 export const dynamic = "force-dynamic";
@@ -49,7 +50,7 @@ export default function DashboardPage() {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
           <h2 className="text-2xl font-bold mb-4">Welcome!</h2>
           <p className="text-gray-600 mb-4">
             You are signed in as: <span className="font-semibold">{user.email}</span>
@@ -59,6 +60,31 @@ export default function DashboardPage() {
               ✅ Your authentication is set up and working! You can now build out your app features.
             </p>
           </div>
+        </div>
+
+        {/* Navigation Links */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Link
+            href="/products"
+            className="bg-white p-8 rounded-lg shadow hover:shadow-lg transition text-center cursor-pointer"
+          >
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">🛍️ Shop</h3>
+            <p className="text-gray-600">Browse and buy school supplies</p>
+          </Link>
+          <Link
+            href="/cart"
+            className="bg-white p-8 rounded-lg shadow hover:shadow-lg transition text-center cursor-pointer"
+          >
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">🛒 Cart</h3>
+            <p className="text-gray-600">View your shopping cart</p>
+          </Link>
+          <Link
+            href="/admin"
+            className="bg-white p-8 rounded-lg shadow hover:shadow-lg transition text-center cursor-pointer border-2 border-purple-200"
+          >
+            <h3 className="text-2xl font-bold text-purple-600 mb-2">⚙️ Admin</h3>
+            <p className="text-gray-600">Manage orders & products</p>
+          </Link>
         </div>
       </main>
     </div>
