@@ -1,5 +1,5 @@
 import { createClient } from "./client";
-import { Product, Category, Order, OrderItem } from "./types/database";
+import { Product, Category, Order, OrderItem } from "../types/database";
 
 // ===== CATEGORIES =====
 export async function getCategories() {
