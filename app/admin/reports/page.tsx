@@ -8,10 +8,17 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
+interface SalesStats {
+  totalRevenue: number;
+  totalOrders: number;
+  avgOrderValue: number;
+  topProducts: any[];
+}
+
 export default function AdminReportsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<SalesStats>({
     totalRevenue: 0,
     totalOrders: 0,
     avgOrderValue: 0,
