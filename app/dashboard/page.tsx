@@ -5,6 +5,8 @@ import { useAuth } from "@/lib/auth-context";
 import { signOut } from "@/lib/supabase/auth";
 import { useEffect } from "react";
 
+export const dynamic = "force-dynamic";
+
 export default function DashboardPage() {
   const router = useRouter();
   const { user, loading } = useAuth();

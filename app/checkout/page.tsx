@@ -1,4 +1,7 @@
-"use client";
+d C:\Users\Lenovo\SchoolSupplies\schoolsupplies
+git remote add origin https://github.com/YOUR_USERNAME/schoolsupplies.git
+git branch -M main
+git push -u origin main"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -6,6 +9,8 @@ import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { createOrder, addOrderItem } from "@/lib/supabase/database";
 import Link from "next/link";
+
+export const dynamic = "force-dynamic";
 
 export default function CheckoutPage() {
   const router = useRouter();

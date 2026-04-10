@@ -7,6 +7,8 @@ import { Product, Category } from "@/lib/types/database";
 import ProductCard from "@/components/ProductCard";
 import { useCart } from "@/lib/cart-context";
 
+export const dynamic = "force-dynamic";
+
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);

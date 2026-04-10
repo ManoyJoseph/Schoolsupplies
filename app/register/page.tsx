@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { signUp } from "@/lib/supabase/auth";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 export default function RegisterPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");

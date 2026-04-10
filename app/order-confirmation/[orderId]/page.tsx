@@ -6,6 +6,8 @@ import { useParams } from "next/navigation";
 import { getOrderById, getOrderItems } from "@/lib/supabase/database";
 import { Order, OrderItem, Product } from "@/lib/types/database";
 
+export const dynamic = "force-dynamic";
+
 export default function OrderConfirmationPage() {
   const params = useParams();
   const orderId = params.orderId as string;
