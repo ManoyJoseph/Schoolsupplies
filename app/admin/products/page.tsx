@@ -128,7 +128,7 @@ export default function AdminProductsPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900">Products Management</h1>
+          <h1 className="text-4xl font-bold text-gray-900">Skool So Fly - Products</h1>
           <Link
             href="/admin"
             className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
