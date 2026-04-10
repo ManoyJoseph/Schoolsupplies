@@ -1,7 +1,4 @@
-d C:\Users\Lenovo\SchoolSupplies\schoolsupplies
-git remote add origin https://github.com/YOUR_USERNAME/schoolsupplies.git
-git branch -M main
-git push -u origin main"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
