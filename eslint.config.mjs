@@ -3,8 +3,8 @@
   import nextTs from "eslint-config-next/typescript.js";
 
   const eslintConfig = defineConfig([
-    ...(Array.isArray(nextVitals) ? nextVitals : [nextVitals]),
-    ...(Array.isArray(nextTs) ? nextTs : [nextTs]),
+    nextVitals,
+    nextTs,
     // Override default ignores of eslint-config-next.
     globalIgnores([
       // Default ignores of eslint-config-next:
