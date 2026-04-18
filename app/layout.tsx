@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/lib/auth-context";
-import { CartProvider } from "@/lib/cart-context";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Skool So Fly - Premium School Supplies",
-  description: "Quality school supplies at unbeatable prices",
+  title: "Skool So Fly - POS System",
+  description: "Point of Sale System for school supply stores",
 };
 
 export default function RootLayout({
@@ -31,7 +30,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <AuthProvider>
-          <CartProvider>{children}</CartProvider>
+          {children}
         </AuthProvider>
       </body>
     </html>
