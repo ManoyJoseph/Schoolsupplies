@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Skool So Fly - POS System",
-  description: "Point of Sale System for school supply stores",
+  title: "Skool So Fly POS",
+  description: "School Supplies POS System",
 };
 
 export default function RootLayout({

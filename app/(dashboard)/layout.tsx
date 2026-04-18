@@ -1,5 +1,6 @@
 "use client";
 
+import Sidebar from "@/components/Sidebar";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -30,5 +31,12 @@ export default function DashboardLayout({
     return null;
   }
 
-  return <>{children}</>;
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <main className="ml-72 flex-1 min-h-screen bg-gray-50 overflow-y-auto">
+        {children}
+      </main>
+    </div>
+  );
 }
