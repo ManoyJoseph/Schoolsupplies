@@ -1,125 +1,160 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/lib/auth-context";
-import { useRouter } from "next/navigation";
-import { getAllOrders, updateOrderStatus } from "@/lib/supabase/database";
-import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 export const dynamic = "force-dynamic";
 
-export default function AdminOrdersPage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-  const [orders, setOrders] = useState<any[]>([]);
-  const [pageLoading, setPageLoading] = useState(true);
-  const [selectedStatus, setSelectedStatus] = useState<{ [key: string]: string }>({});
+export default function TransactionsPage() {
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login");
-      return;
-    }
+  useEffect(() => { fetchTransactions(); }, []);
 
-    if (!loading && user) {
-      fetchOrders();
-    }
-  }, [user, loading, router]);
-
-  const fetchOrders = async () => {
-    setPageLoading(true);
-    const { data, error } = await getAllOrders();
-    if (data) {
-      setOrders(data);
-      const statusMap: { [key: string]: string } = {};
-      data.forEach((order: any) => {
-        statusMap[order.id] = order.status || "pending";
-      });
-      setSelectedStatus(statusMap);
-    }
-    setPageLoading(false);
+  const fetchTransactions = async () => {
+    setLoading(true);
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("transactions")
+      .select(`*, transaction_items(*)`)
+      .order("created_at", { ascending: false });
+    if (data) setTransactions(data);
+    setLoading(false);
   };
 
-  const handleStatusChange = async (orderId: string, newStatus: string) => {
-    setSelectedStatus((prev) => ({
-      ...prev,
-      [orderId]: newStatus,
-    }));
+  const filtered = transactions.filter((t) =>
+    t.id.toLowerCase().includes(search.toLowerCase())
+  );
 
-    const { error } = await updateOrderStatus(orderId, newStatus);
-    if (error) {
-      alert("Failed to update order status");
-      // Revert on error
-      fetchOrders();
-    }
-  };
-
-  if (loading || pageLoading) {
-    return <div className="p-8">Loading...</div>;
-  }
-
-  if (!user) {
-    return null;
-  }
+  const totalRevenue = transactions.reduce((sum, t) => sum + (t.total_amount || 0), 0);
+  const todayTransactions = transactions.filter((t) => {
+    const today = new Date();
+    const tDate = new Date(t.created_at);
+    return tDate.toDateString() === today.toDateString();
+  });
+  const todayRevenue = todayTransactions.reduce((sum, t) => sum + (t.total_amount || 0), 0);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900">Skool So Fly - Orders</h1>
-          <Link
-            href="/admin"
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-          >
-            Back to Dashboard
-          </Link>
-        </div>
+    <div className="p-8 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Transactions</h1>
+        <p className="text-gray-500 mt-1">All POS sales history</p>
+      </div>
 
-        <div className="bg-white rounded-lg shadow overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-100 border-b">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5">
+          <p className="text-2xl mb-2">💰</p>
+          <p className="text-2xl font-bold text-blue-700">₱{totalRevenue.toFixed(2)}</p>
+          <p className="text-sm text-gray-600 mt-1">Total Revenue</p>
+        </div>
+        <div className="bg-violet-50 border border-violet-100 rounded-2xl p-5">
+          <p className="text-2xl mb-2">🧾</p>
+          <p className="text-2xl font-bold text-violet-700">{transactions.length}</p>
+          <p className="text-sm text-gray-600 mt-1">Total Transactions</p>
+        </div>
+        <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5">
+          <p className="text-2xl mb-2">📅</p>
+          <p className="text-2xl font-bold text-emerald-700">₱{todayRevenue.toFixed(2)}</p>
+          <p className="text-sm text-gray-600 mt-1">Today's Revenue</p>
+        </div>
+        <div className="bg-orange-50 border border-orange-100 rounded-2xl p-5">
+          <p className="text-2xl mb-2">📊</p>
+          <p className="text-2xl font-bold text-orange-600">
+            ₱{transactions.length > 0 ? (totalRevenue / transactions.length).toFixed(2) : "0.00"}
+          </p>
+          <p className="text-sm text-gray-600 mt-1">Avg Transaction</p>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="🔍 Search by transaction ID..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full md:w-96 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+        />
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="bg-gray-50 border-b border-gray-100">
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Transaction ID</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Items</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tendered</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Change</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date & Time</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {loading ? (
               <tr>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Order ID</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Total</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Items</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Date</th>
+                <td colSpan={6} className="px-6 py-12 text-center text-gray-400">
+                  Loading...
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {orders.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-600">
-                    No orders yet
+            ) : filtered.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-6 py-12 text-center">
+                  <p className="text-gray-400 text-4xl mb-2">🧾</p>
+                  <p className="text-gray-400 font-medium">No transactions yet</p>
+                  <p className="text-gray-300 text-sm mt-1">Complete a sale in POS Register</p>
+                </td>
+              </tr>
+            ) : (
+              filtered.map((t) => (
+                <tr key={t.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4">
+                    <span className="font-mono text-sm font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
+                      #{t.id.slice(0, 8).toUpperCase()}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm text-gray-600 font-medium">
+                      {t.transaction_items?.length || 0} items
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm font-bold text-gray-900">
+                      ₱{t.total_amount?.toFixed(2) || "0.00"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm text-gray-600">
+                      ₱{t.amount_tendered?.toFixed(2) || "0.00"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm font-semibold text-emerald-600">
+                      ₱{t.change_amount?.toFixed(2) || "0.00"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div>
+                      <p className="text-sm text-gray-700 font-medium">
+                        {new Date(t.created_at).toLocaleDateString("en-PH", {
+                          month: "short", day: "numeric", year: "numeric"
+                        })}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {new Date(t.created_at).toLocaleTimeString("en-PH", {
+                          hour: "2-digit", minute: "2-digit"
+                        })}
+                      </p>
+                    </div>
                   </td>
                 </tr>
-              ) : (
-                orders.map((order) => (
-                  <tr key={order.id} className="border-b hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm text-gray-900 font-mono">{order.id.slice(0, 8)}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">${order.total_price?.toFixed(2) || "0.00"}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{order.order_items?.length || 0} items</td>
-                    <td className="px-6 py-4">
-                      <select
-                        value={selectedStatus[order.id] || "pending"}
-                        onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                        className="px-3 py-1 border border-gray-300 rounded text-sm"
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="processing">Processing</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
-                      </select>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {new Date(order.created_at).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

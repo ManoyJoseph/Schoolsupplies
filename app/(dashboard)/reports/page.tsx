@@ -1,181 +1,197 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/lib/auth-context";
-import { useRouter } from "next/navigation";
-import { getSalesStats } from "@/lib/supabase/database";
-import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 export const dynamic = "force-dynamic";
 
-interface SalesStats {
-  totalRevenue: number;
-  totalOrders: number;
-  avgOrderValue: number;
-  topProducts: any[];
-}
-
-export default function AdminReportsPage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-  const [stats, setStats] = useState<SalesStats>({
+export default function ReportsPage() {
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
     totalRevenue: 0,
-    totalOrders: 0,
-    avgOrderValue: 0,
-    topProducts: [],
+    totalTransactions: 0,
+    avgTransactionValue: 0,
+    totalItemsSold: 0,
   });
-  const [pageLoading, setPageLoading] = useState(true);
+  const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [todayRevenue, setTodayRevenue] = useState(0);
+  const [todayTransactions, setTodayTransactions] = useState(0);
+  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login");
-      return;
-    }
-
-    if (!loading && user) {
-      fetchStats();
-    }
-  }, [user, loading, router]);
+  useEffect(() => { fetchStats(); }, []);
 
   const fetchStats = async () => {
-    setPageLoading(true);
-    const { data, error } = await getSalesStats();
-    if (data) {
-      setStats(data);
-    }
-    setPageLoading(false);
+    setLoading(true);
+    const supabase = createClient();
+
+    const { data: transactions } = await supabase
+      .from("transactions").select("*");
+
+    const { data: items } = await supabase
+      .from("transaction_items").select("*, products(name)");
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const { data: todayData } = await supabase
+      .from("transactions").select("*")
+      .gte("created_at", today.toISOString());
+
+    const { data: recent } = await supabase
+      .from("transactions").select("*")
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    const totalRevenue = transactions?.reduce((sum, t) => sum + (t.total_amount || 0), 0) ?? 0;
+    const totalTransactions = transactions?.length ?? 0;
+    const totalItemsSold = items?.reduce((sum, i) => sum + (i.quantity || 0), 0) ?? 0;
+
+    const productMap: { [key: string]: { name: string; qty: number; revenue: number } } = {};
+    items?.forEach((item) => {
+      const name = item.product_name || item.products?.name || "Unknown";
+      if (!productMap[name]) productMap[name] = { name, qty: 0, revenue: 0 };
+      productMap[name].qty += item.quantity || 0;
+      productMap[name].revenue += item.subtotal || 0;
+    });
+    const sorted = Object.values(productMap).sort((a, b) => b.qty - a.qty).slice(0, 5);
+
+    const todayRev = todayData?.reduce((sum, t) => sum + (t.total_amount || 0), 0) ?? 0;
+
+    setStats({
+      totalRevenue,
+      totalTransactions,
+      avgTransactionValue: totalTransactions > 0 ? totalRevenue / totalTransactions : 0,
+      totalItemsSold,
+    });
+    setTopProducts(sorted);
+    setTodayRevenue(todayRev);
+    setTodayTransactions(todayData?.length ?? 0);
+    setRecentTransactions(recent ?? []);
+    setLoading(false);
   };
 
-  if (loading || pageLoading) {
-    return <div className="p-8">Loading...</div>;
-  }
-
-  if (!user) {
-    return null;
-  }
+  if (loading) return (
+    <div className="p-8 flex items-center justify-center h-96">
+      <p className="text-gray-400">Loading reports...</p>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900">Skool So Fly - Sales Reports</h1>
-          <Link
-            href="/admin"
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-          >
-            Back to Dashboard
-          </Link>
-        </div>
+    <div className="p-8 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Reports</h1>
+        <p className="text-gray-500 mt-1">Sales analytics and performance overview</p>
+      </div>
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-sm text-gray-600 mb-2">Total Revenue</div>
-            <div className="text-4xl font-bold text-green-600">${stats.totalRevenue.toFixed(2)}</div>
-            <div className="text-xs text-gray-500 mt-2">All time</div>
+      {/* Today's Stats */}
+      <div className="mb-6">
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+          📅 Today
+        </h2>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6">
+            <p className="text-3xl mb-2">💰</p>
+            <p className="text-3xl font-bold text-blue-700">₱{todayRevenue.toFixed(2)}</p>
+            <p className="text-sm text-gray-600 mt-1">Today's Revenue</p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-sm text-gray-600 mb-2">Total Orders</div>
-            <div className="text-4xl font-bold text-blue-600">{stats.totalOrders}</div>
-            <div className="text-xs text-gray-500 mt-2">Completed orders</div>
+          <div className="bg-violet-50 border border-violet-100 rounded-2xl p-6">
+            <p className="text-3xl mb-2">🧾</p>
+            <p className="text-3xl font-bold text-violet-700">{todayTransactions}</p>
+            <p className="text-sm text-gray-600 mt-1">Today's Transactions</p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-sm text-gray-600 mb-2">Average Order Value</div>
-            <div className="text-4xl font-bold text-purple-600">${stats.avgOrderValue.toFixed(2)}</div>
-            <div className="text-xs text-gray-500 mt-2">Per transaction</div>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-sm text-gray-600 mb-2">Revenue Per Order</div>
-            <div className="text-4xl font-bold text-orange-600">
-              ${stats.totalOrders > 0 ? (stats.totalRevenue / stats.totalOrders).toFixed(2) : "0.00"}
+        </div>
+      </div>
+
+      {/* All Time Stats */}
+      <div className="mb-6">
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+          📊 All Time
+        </h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { emoji: "💵", value: `₱${stats.totalRevenue.toFixed(2)}`, label: "Total Revenue", color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-100" },
+            { emoji: "🧾", value: stats.totalTransactions, label: "Transactions", color: "text-blue-700", bg: "bg-blue-50 border-blue-100" },
+            { emoji: "📦", value: stats.totalItemsSold, label: "Items Sold", color: "text-orange-600", bg: "bg-orange-50 border-orange-100" },
+            { emoji: "📈", value: `₱${stats.avgTransactionValue.toFixed(2)}`, label: "Avg Transaction", color: "text-violet-700", bg: "bg-violet-50 border-violet-100" },
+          ].map((card) => (
+            <div key={card.label} className={`${card.bg} border rounded-2xl p-5`}>
+              <p className="text-2xl mb-2">{card.emoji}</p>
+              <p className={`text-2xl font-bold ${card.color}`}>{card.value}</p>
+              <p className="text-sm text-gray-600 mt-1">{card.label}</p>
             </div>
-            <div className="text-xs text-gray-500 mt-2">Performance metric</div>
-          </div>
+          ))}
         </div>
+      </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Products */}
-        <div className="bg-white p-8 rounded-lg shadow">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Top 5 Products by Sales</h2>
-          
-          {stats.topProducts.length === 0 ? (
-            <p className="text-gray-600">No sales data yet</p>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-50">
+            <h2 className="text-lg font-bold text-gray-900">🏆 Top Products</h2>
+            <p className="text-xs text-gray-400 mt-0.5">By units sold</p>
+          </div>
+          {topProducts.length === 0 ? (
+            <div className="px-6 py-12 text-center">
+              <p className="text-gray-300 text-4xl mb-2">📦</p>
+              <p className="text-gray-400 text-sm">No sales data yet</p>
+            </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-100 border-b">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Rank</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Product Name</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Units Sold</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stats.topProducts.map((item: any, index: number) => (
-                    <tr key={index} className="border-b hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm font-bold text-gray-900">#{index + 1}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        {item.products?.name || "Unknown"}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">{item.quantity} units</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="p-4 space-y-3">
+              {topProducts.map((p, i) => (
+                <div key={p.name} className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl">
+                  <span className="text-xl w-8 text-center">
+                    {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 text-sm truncate">{p.name}</p>
+                    <p className="text-xs text-gray-400">{p.qty} units sold</p>
+                  </div>
+                  <span className="text-sm font-bold text-emerald-600">
+                    ₱{p.revenue.toFixed(2)}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
         </div>
 
-        {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-          <div className="bg-white p-8 rounded-lg shadow">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Revenue Summary</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Total Revenue:</span>
-                <span className="font-bold">${stats.totalRevenue.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Total Orders:</span>
-                <span className="font-bold">{stats.totalOrders}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Average Order Value:</span>
-                <span className="font-bold">${stats.avgOrderValue.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Conversion Rate:</span>
-                <span className="font-bold">{stats.totalOrders > 0 ? "High" : "N/A"}</span>
-              </div>
-            </div>
+        {/* Recent Transactions */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-50">
+            <h2 className="text-lg font-bold text-gray-900">🕐 Recent Transactions</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Last 5 transactions</p>
           </div>
-
-          <div className="bg-white p-8 rounded-lg shadow">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Business Health</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Status:</span>
-                <span className={`font-bold ${stats.totalOrders > 0 ? "text-green-600" : "text-gray-600"}`}>
-                  {stats.totalOrders > 0 ? "Active" : "No Sales Yet"}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Products Sold:</span>
-                <span className="font-bold">
-                  {stats.topProducts.reduce((sum: number, p: any) => sum + p.quantity, 0)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Avg Transaction:</span>
-                <span className="font-bold">${(stats.totalRevenue / (stats.totalOrders || 1)).toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Top Product:</span>
-                <span className="font-bold">
-                  {stats.topProducts[0]?.products?.name || "N/A"}
-                </span>
-              </div>
+          {recentTransactions.length === 0 ? (
+            <div className="px-6 py-12 text-center">
+              <p className="text-gray-300 text-4xl mb-2">🧾</p>
+              <p className="text-gray-400 text-sm">No transactions yet</p>
             </div>
-          </div>
+          ) : (
+            <div className="p-4 space-y-3">
+              {recentTransactions.map((t) => (
+                <div key={t.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl">
+                  <div className="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <span className="text-sm">🧾</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-mono text-xs font-bold text-blue-600">
+                      #{t.id.slice(0, 8).toUpperCase()}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {new Date(t.created_at).toLocaleString("en-PH", {
+                        month: "short", day: "numeric",
+                        hour: "2-digit", minute: "2-digit"
+                      })}
+                    </p>
+                  </div>
+                  <span className="text-sm font-bold text-gray-900">
+                    ₱{t.total_amount?.toFixed(2)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

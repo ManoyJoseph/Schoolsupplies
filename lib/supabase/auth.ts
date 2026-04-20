@@ -37,3 +37,22 @@ export async function getCurrentUser() {
 
   return session?.user ?? null;
 }
+
+export async function getUserRole(userId: string) {
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .single();
+  
+  if (error) return null;
+  return data?.role ?? 'cashier';
+}
+
+export async function getRedirectPathByRole(userId: string) {
+  const role = await getUserRole(userId);
+  if (role === 'admin') return '/dashboard';
+  return '/pos';
+}

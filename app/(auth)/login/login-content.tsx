@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "@/lib/supabase/auth";
-import Link from "next/link";
+import { signIn, getRedirectPathByRole } from "@/lib/supabase/auth";
 
 export default function LoginContent() {
   const router = useRouter();
@@ -35,8 +34,16 @@ export default function LoginContent() {
 
     if (signInError) {
       setError(signInError.message);
+      setLoading(false);
+      return;
+    }
+
+    // Auto-redirect based on role
+    if (data?.user) {
+      const redirectPath = await getRedirectPathByRole(data.user.id);
+      router.push(redirectPath);
     } else {
-      router.push("/dashboard");
+      router.push('/pos');
     }
 
     setLoading(false);
@@ -45,13 +52,11 @@ export default function LoginContent() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-white">
       <div className="w-full max-w-md p-8">
-        {/* Logo/Brand */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Skool So Fly</h1>
           <p className="text-gray-600">Point of Sale System</p>
         </div>
 
-        {/* Form Container */}
         <div className="bg-white border border-gray-300 rounded-lg p-8">
           <h2 className="text-2xl font-bold mb-8 text-center text-gray-900">
             Sign In
@@ -95,11 +100,9 @@ export default function LoginContent() {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-gray-600">
-            Don't have an account?{" "}
-            <Link href="/register" className="text-gray-900 hover:underline font-medium">
-              Sign up
-            </Link>
+          {/* Removed Sign up link — POS staff are created by admin only */}
+          <p className="mt-6 text-center text-gray-500 text-sm">
+            Contact your administrator for access.
           </p>
         </div>
       </div>
