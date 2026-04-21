@@ -46,6 +46,8 @@ app/
 │   ├── dashboard/page.tsx          # Admin dashboard
 │   ├── pos/page.tsx                # POS register
 │   ├── inventory/page.tsx          # Inventory management
+│   ├── suppliers/page.tsx          # Supplier management
+│   ├── purchase-orders/page.tsx    # Purchase order tracking
 │   ├── transactions/page.tsx       # Transaction history
 │   └── reports/page.tsx            # Analytics & reports
 │
@@ -58,9 +60,10 @@ app/
 ```
 components/
 └── Sidebar.tsx                      # Main navigation component
-    - Dynamic links based on user role
+    - Dynamic links based on user role (with Lucide icons)
     - User info display
     - Role badge (Admin/Cashier)
+    - Authentication & logout handling
 ```
 
 ### `/lib` - Utilities & Contexts
@@ -110,6 +113,8 @@ Check Auth Session
 ### Protected Routes
 - `/dashboard` - Admin only
 - `/inventory` - Admin only
+- `/suppliers` - Admin only
+- `/purchase-orders` - Admin only
 - `/transactions` - Admin only
 - `/reports` - Admin only
 - `/pos` - Cashier & Admin
@@ -177,9 +182,22 @@ const fetchData = async () => {
 **Key Features**:
 - Dynamic link rendering based on user role
 - User email & role badge display
-- Gradient background styling
+- Lucide React icons for all navigation items
+- Gradient background styling (slate-900 to slate-800)
 - Fixed positioning (w-64)
 - Responsive on mobile
+- Active link highlighting with blue background
+
+**Icons Used**:
+- POS Register: `ShoppingCart`
+- Dashboard: `LayoutDashboard`
+- Inventory: `Package`
+- Suppliers: `Truck`
+- Purchase Orders: `ClipboardList`
+- Transactions: `CreditCard`
+- Reports: `BarChart3`
+- Brand Logo: `Store`
+- Logout: `LogOut`
 
 **Usage**:
 ```tsx
@@ -188,7 +206,47 @@ const fetchData = async () => {
 
 **Key State**:
 - User info from `useAuth()`
+- User role from profiles table
 - Current pathname from `usePathname()`
+
+### Login Page (`app/(auth)/login/login-content.tsx`)
+
+**Purpose**: User authentication interface
+
+**Key Features**:
+- Email and password input fields with Tailwind styling
+- Password visibility toggle using Lucide icons (`Eye` / `EyeOff`)
+- "Remember me" checkbox with localStorage persistence
+- Email auto-load on mount if previously saved
+- Error and success message display
+- Loading state during authentication
+- Responsive single-column card design
+- Brand logo using `ShoppingBag` icon
+
+**Icons Used**:
+- Brand Logo: `ShoppingBag`
+- Show Password: `Eye`
+- Hide Password: `EyeOff`
+
+**Key Features**:
+- Form validation (email and password required)
+- Secure password handling with visibility toggle
+- Remember me functionality saves email to localStorage
+- Automatic redirect based on user role
+- Success notification for newly registered accounts
+
+**Data Flow**:
+```
+User inputs credentials
+  ↓
+Validation check
+  ↓
+signIn() async call
+  ↓
+getRedirectPathByRole() determines destination
+  ↓
+Redirect to admin dashboard or POS
+```
 
 ---
 
@@ -361,8 +419,13 @@ try {
    ```
 
 2. **Add to Sidebar** (`components/Sidebar.tsx`):
+   - Import icon from `lucide-react`:
    ```tsx
-   { icon: "📄", label: "New Page", href: "/new-page", visible: true }
+   import { MyIcon } from "lucide-react";
+   ```
+   - Add to `adminLinks` array:
+   ```tsx
+   { href: "/new-page", label: "New Page", icon: MyIcon }
    ```
 
 3. **Protect route** (auto-protected if in `/dashboard` group)

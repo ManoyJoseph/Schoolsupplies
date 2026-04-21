@@ -5,6 +5,17 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import {
+  LayoutDashboard,
+  ShoppingCart,
+  Package,
+  Truck,
+  ClipboardList,
+  CreditCard,
+  BarChart3,
+  LogOut,
+  Store,
+} from "lucide-react";
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
@@ -32,28 +43,31 @@ export default function Sidebar() {
   };
 
   const adminLinks = [
-    { href: "/pos", label: "POS Register", emoji: "🛒" },
-    { href: "/dashboard", label: "Dashboard", emoji: "📊" },
-    { href: "/inventory", label: "Inventory", emoji: "📦" },
-    { href: "/transactions", label: "Transactions", emoji: "💳" },
-    { href: "/reports", label: "Reports", emoji: "📈" },
+    { href: "/pos", label: "POS Register", icon: ShoppingCart },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/inventory", label: "Inventory", icon: Package },
+    { href: "/suppliers", label: "Suppliers", icon: Truck },
+    { href: "/purchase-orders", label: "Purchase Orders", icon: ClipboardList },
+    { href: "/transactions", label: "Transactions", icon: CreditCard },
+    { href: "/reports", label: "Reports", icon: BarChart3 },
   ];
 
   const cashierLinks = [
-    { href: "/pos", label: "POS Register", emoji: "🛒" },
+    { href: "/pos", label: "POS Register", icon: ShoppingCart },
   ];
 
   const links = role === "admin" ? adminLinks : cashierLinks;
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col" 
-      style={{ background: "linear-gradient(180deg, #0f172a 0%, #1e293b 100%)" }}>
-      
+    <aside
+      className="fixed left-0 top-0 h-screen w-64 flex flex-col"
+      style={{ background: "linear-gradient(180deg, #0f172a 0%, #1e293b 100%)" }}
+    >
       {/* Brand */}
       <div className="px-6 py-6 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-blue-500 flex items-center justify-center text-lg">
-            🏫
+          <div className="w-9 h-9 rounded-xl bg-blue-500 flex items-center justify-center">
+            <Store size={18} className="text-white" />
           </div>
           <div>
             <h1 className="text-white font-bold text-lg leading-none">Skool So Fly</h1>
@@ -74,7 +88,7 @@ export default function Sidebar() {
               <p className={`text-xs font-semibold mt-0.5 ${
                 role === "admin" ? "text-yellow-400" : "text-green-400"
               }`}>
-                {role === "admin" ? "👑 Admin" : "💼 Cashier"}
+                {role === "admin" ? "Admin" : "Cashier"}
               </p>
             </div>
           </div>
@@ -88,6 +102,7 @@ export default function Sidebar() {
         </p>
         {links.map((link) => {
           const isActive = pathname === link.href;
+          const Icon = link.icon;
           return (
             <Link
               key={link.href}
@@ -98,7 +113,7 @@ export default function Sidebar() {
                   : "text-slate-300 hover:bg-white/10 hover:text-white"
               }`}
             >
-              <span className="text-lg">{link.emoji}</span>
+              <Icon size={18} />
               <span className="font-medium text-sm">{link.label}</span>
               {isActive && (
                 <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white" />
@@ -114,7 +129,7 @@ export default function Sidebar() {
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:bg-white/10 hover:text-white transition-all duration-200"
         >
-          <span className="text-lg">🚪</span>
+          <LogOut size={18} />
           <span className="font-medium text-sm">Logout</span>
         </button>
       </div>
