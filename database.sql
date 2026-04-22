@@ -53,6 +53,30 @@ CREATE POLICY "public_read_categories" ON categories
 CREATE POLICY "public_read_products" ON products
   FOR SELECT USING (true);
 
+-- Admins can insert products
+CREATE POLICY "admin_insert_products" ON products
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
+    )
+  );
+
+-- Admins can update products
+CREATE POLICY "admin_update_products" ON products
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
+    )
+  );
+
+-- Admins can delete products
+CREATE POLICY "admin_delete_products" ON products
+  FOR DELETE USING (
+    EXISTS (
+      SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
+    )
+  );
+
 -- Orders: users can see only their own orders
 CREATE POLICY "users_see_own_orders" ON orders
   FOR SELECT USING (auth.uid() = user_id);
